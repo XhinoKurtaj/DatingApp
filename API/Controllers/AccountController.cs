@@ -2,8 +2,7 @@
 using API.DTOs;
 using API.Entities;
 using API.Interfaces;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Identity;
+using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Cryptography;
@@ -17,17 +16,20 @@ namespace API.Controllers
 
         private readonly DataContext _context;
         private readonly ITokenService _tokenService;
+        private readonly IMapper _mapper;
 
-        public AccountController(DataContext context, ITokenService tokenService)
+        public AccountController(DataContext context, ITokenService tokenService, IMapper mapper)
         {
             _context = context;
             _tokenService = tokenService;
+            _mapper = mapper;
         }
 
         [HttpPost("login")]
         public async Task<ActionResult<UserDto>> Login(LoginDto loginDto)
         {
-            var user = await _context.Users.FirstOrDefaultAsync(x => x.Email == loginDto.Email);
+            var user = await _context.Users
+                .Include(p => p.Photos).FirstOrDefaultAsync(x => x.Email == loginDto.Email);
             if (user == null) return Unauthorized("Invalid Username");
 
             using var hmac = new HMACSHA512(user.PasswordSalt);
@@ -41,10 +43,13 @@ namespace API.Controllers
             }
 
             return Ok(new UserDto
-                {
-                    Email = user.Email,
-                    Token = _tokenService.CreateToken(user)
-                }
+            {
+                Email = user.Email,
+                Token = _tokenService.CreateToken(user),
+                PhotoUrl = user.Photos.FirstOrDefault(x => x.IsMain)?.Url,
+                KnownAs = user.KnownAs,
+                Gender = user.Gender,
+            }
             );
         }
 
@@ -54,25 +59,24 @@ namespace API.Controllers
 
             if (await UserExists(registerDto.Email)) return BadRequest("Email already exist");
 
+            var user = _mapper.Map<User>(registerDto);
 
             using var hmac = new HMACSHA512();
 
-            var user = new User
-            {
-                UserName = registerDto.Username.ToLower(),
-                Email = registerDto.Email.ToLower(),
-                PasswordHash = hmac.ComputeHash(Encoding.UTF8.GetBytes(registerDto.Password)),
-                PasswordSalt = hmac.Key
-            };
+            user.Email = registerDto.Email.ToLower();
+            user.PasswordHash = hmac.ComputeHash(Encoding.UTF8.GetBytes(registerDto.Password));
+            user.PasswordSalt = hmac.Key;
 
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
 
             return Ok(new UserDto
-                {
-                    Email = user.Email,
-                    Token = _tokenService.CreateToken(user)
-                }
+            {
+                Email = user.Email,
+                Token = _tokenService.CreateToken(user),
+                KnownAs = user.KnownAs,
+                Gender = user.Gender,
+            }
             );
         }
 
