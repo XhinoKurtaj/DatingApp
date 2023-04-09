@@ -28,14 +28,6 @@ namespace API.Controllers
             _photoService = photoService;
         }
 
-        //[HttpGet]
-        //public async Task<ActionResult<IEnumerable<MemberDto>>> GetUser()
-        //{
-        //    var users = await _userRepository.GetUsersAsync();
-        //    var mapUsers = _mapper.Map<IEnumerable<MemberDto>>(users);
-        //    return Ok(mapUsers);
-        //}
-
         [HttpGet]
         public async Task<ActionResult<PagedList<MemberDto>>> GetUser([FromQuery] UserParams userParams)
         {
@@ -145,5 +137,13 @@ namespace API.Controllers
             if (await _userRepository.SaveAllAsync()) return Ok();
             return BadRequest("Problem deleting photo");
         }
+
+        //[HttpGet]
+        //public async Task<ActionResult<IEnumerable<MemberDto>>> GetUser()
+        //{
+        //    var users = await _userRepository.GetUsersAsync();
+        //    var mapUsers = _mapper.Map<IEnumerable<MemberDto>>(users);
+        //    return Ok(mapUsers);
+        //}
     }
 }

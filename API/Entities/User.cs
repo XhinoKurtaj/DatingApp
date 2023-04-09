@@ -1,4 +1,5 @@
 ﻿using API.Extensions;
+using CloudinaryDotNet.Actions;
 using System;
 
 namespace API.Entities
@@ -21,6 +22,9 @@ namespace API.Entities
         public string City { get; set; }
         public string Country { get; set; }
         public List<Photo> Photos { get; set; } = new();
+
+        public List<UserLike> LikedByUsers { get; set; }
+        public List<UserLike> LikedUsers { get; set; }
 
         //public int GetAge()
         //{
